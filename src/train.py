@@ -1,51 +1,62 @@
-"""Train a wine quality prediction model."""
+"""Train a wine quality prediction model with MLflow tracking."""
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, r2_score
-import joblib
+import mlflow
+import mlflow.sklearn
 from pathlib import Path
 
 
-DATA_URL = "https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-red.csv"
-MODEL_PATH = Path(__file__).parent.parent / "models" / "model.joblib"
+DATA_PATH = Path(__file__).parent.parent / "data" / "winequality-red.csv"
+EXPERIMENT_NAME = "wine-quality"
 
 
 def load_data() -> pd.DataFrame:
-    df = pd.read_csv(DATA_URL, sep=";")
-    return df
+    return pd.read_csv(DATA_PATH, sep=";")
 
 
-def train():
-    print("1. Loading data...")
-    df = load_data()
-    print(f"   Dataset: {df.shape[0]} rows, {df.shape[1]} columns")
+def train(n_estimators: int = 100, test_size: float = 0.2):
+    mlflow.set_experiment(EXPERIMENT_NAME)
 
-    X = df.drop("quality", axis=1)
-    y = df["quality"]
+    with mlflow.start_run():
+        print("1. Loading data...")
+        df = load_data()
+        print(f"   Dataset: {df.shape[0]} rows, {df.shape[1]} columns")
 
-    print(f"   Features: {list(X.columns)}")
-    print(f"   Target: quality (range {y.min()} to {y.max()})")
+        X = df.drop("quality", axis=1)
+        y = df["quality"]
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
-    )
-    print(f"\n2. Split: {len(X_train)} train, {len(X_test)} test")
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=test_size, random_state=42
+        )
+        print(f"\n2. Split: {len(X_train)} train, {len(X_test)} test")
 
-    print("\n3. Training RandomForest...")
-    model = RandomForestRegressor(n_estimators=100, random_state=42)
-    model.fit(X_train, y_train)
+        # Log parameters
+        mlflow.log_param("n_estimators", n_estimators)
+        mlflow.log_param("test_size", test_size)
+        mlflow.log_param("random_state", 42)
+        mlflow.log_param("model_type", "RandomForestRegressor")
 
-    y_pred = model.predict(X_test)
-    mae = mean_absolute_error(y_test, y_pred)
-    r2 = r2_score(y_test, y_pred)
-    print(f"\n4. Results:")
-    print(f"   MAE: {mae:.3f}")
-    print(f"   R2:  {r2:.3f}")
+        print(f"\n3. Training RandomForest (n_estimators={n_estimators})...")
+        model = RandomForestRegressor(n_estimators=n_estimators, random_state=42)
+        model.fit(X_train, y_train)
 
-    MODEL_PATH.parent.mkdir(exist_ok=True)
-    joblib.dump(model, MODEL_PATH)
-    print(f"\n5. Model saved to: {MODEL_PATH}")
+        y_pred = model.predict(X_test)
+        mae = mean_absolute_error(y_test, y_pred)
+        r2 = r2_score(y_test, y_pred)
+
+        # Log metrics
+        mlflow.log_metric("mae", mae)
+        mlflow.log_metric("r2", r2)
+
+        # Log model
+        mlflow.sklearn.log_model(model, "model")
+
+        print(f"\n4. Results:")
+        print(f"   MAE: {mae:.3f}")
+        print(f"   R2:  {r2:.3f}")
+        print(f"\n5. Run logged to MLflow (experiment: {EXPERIMENT_NAME})")
 
     return model
 

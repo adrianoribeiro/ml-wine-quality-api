@@ -11,3 +11,6 @@ build/
 models/*.joblib
 data/*.csv
 .DS_Store
+mlruns/
+mlflow.db
+*.png
