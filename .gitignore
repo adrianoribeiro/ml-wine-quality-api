@@ -14,3 +14,4 @@ data/*.csv
 mlruns/
 mlflow.db
 *.png
+!docs/*.png
