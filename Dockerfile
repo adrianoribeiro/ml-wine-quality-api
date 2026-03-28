@@ -8,6 +8,7 @@ COPY pyproject.toml .
 RUN pip install --no-cache-dir pandas scikit-learn fastapi uvicorn joblib numpy
 
 COPY src/ src/
+COPY static/ static/
 
 RUN mkdir -p data && \
     curl -sL "https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-red.csv" -o data/winequality-red.csv

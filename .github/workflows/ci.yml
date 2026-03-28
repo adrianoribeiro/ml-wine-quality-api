@@ -19,7 +19,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install pandas scikit-learn fastapi uvicorn joblib httpx pytest
+          pip install pandas scikit-learn fastapi uvicorn joblib httpx pytest numpy
 
       - name: Download dataset
         run: |
@@ -37,10 +37,6 @@ jobs:
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
-
-      - name: Download dataset
-        run: |
-          curl -sL "https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-red.csv" -o data/winequality-red.csv
 
       - name: Build Docker image
         run: docker build -t wine-quality-api .

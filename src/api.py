@@ -2,13 +2,24 @@
 import joblib
 import pandas as pd
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from pathlib import Path
+from src.monitoring import log_prediction, get_metrics, check_drift
 
 
 MODEL_PATH = Path(__file__).parent.parent / "models" / "model.joblib"
+STATIC_PATH = Path(__file__).parent.parent / "static"
 
 app = FastAPI(title="Wine Quality API", version="0.1.0")
+
+app.mount("/static", StaticFiles(directory=STATIC_PATH), name="static")
+
+
+@app.get("/", include_in_schema=False)
+def root():
+    return FileResponse(STATIC_PATH / "index.html")
 
 
 class WineFeatures(BaseModel):
@@ -27,6 +38,7 @@ class WineFeatures(BaseModel):
 
 class Prediction(BaseModel):
     quality: float
+    drift: dict
     input_data: dict
 
 
@@ -42,6 +54,11 @@ def health():
     return {"status": "ok"}
 
 
+@app.get("/metrics")
+def metrics():
+    return get_metrics()
+
+
 @app.post("/predict", response_model=Prediction)
 def predict(wine: WineFeatures):
     model = joblib.load(MODEL_PATH)
@@ -52,8 +69,14 @@ def predict(wine: WineFeatures):
         wine.sulphates, wine.alcohol,
     ]
     df = pd.DataFrame([values], columns=FEATURE_NAMES)
-    quality = model.predict(df)[0]
+    quality = round(float(model.predict(df)[0]), 2)
+
+    input_data = wine.model_dump()
+    drift = check_drift(input_data)
+    log_prediction(input_data, quality)
+
     return Prediction(
-        quality=round(float(quality), 2),
-        input_data=wine.model_dump(),
+        quality=quality,
+        drift=drift,
+        input_data=input_data,
     )
