@@ -1,0 +1,12 @@
+mlruns/
+mlflow.db
+.git/
+.dvc/
+.pytest_cache/
+__pycache__/
+*.png
+*.pdf
+docs/
+tests/
+.gitignore
+.dvcignore
