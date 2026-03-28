@@ -2,10 +2,10 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-COPY pyproject.toml .
-RUN pip install --no-cache-dir pandas scikit-learn fastapi uvicorn joblib
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir numpy
+COPY pyproject.toml .
+RUN pip install --no-cache-dir pandas scikit-learn fastapi uvicorn joblib numpy
 
 COPY src/ src/
 
