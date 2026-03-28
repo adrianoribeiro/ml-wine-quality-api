@@ -8,7 +8,9 @@ RUN pip install --no-cache-dir pandas scikit-learn fastapi uvicorn joblib
 RUN pip install --no-cache-dir numpy
 
 COPY src/ src/
-COPY data/ data/
+
+RUN mkdir -p data && \
+    curl -sL "https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-red.csv" -o data/winequality-red.csv
 
 RUN python src/train.py
 
