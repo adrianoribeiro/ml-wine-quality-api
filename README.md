@@ -5,6 +5,8 @@ The focus is not the model itself, but the **engineering infrastructure** around
 
 **Live demo:** [ml-wine-quality-api-production.up.railway.app](https://ml-wine-quality-api-production.up.railway.app/)
 
+![Web Interface](docs/frontend.png)
+
 ## Project Structure
 
 ```
@@ -127,6 +129,12 @@ Each training run is logged to MLflow with:
 - **Parameters:** model type, n_estimators, test_size, random_state
 - **Metrics:** MAE (Mean Absolute Error), R2 score
 - **Artifacts:** trained model file
+
+The best model is automatically registered in the **MLflow Model Registry** based on the highest R2 score.
+
+![MLflow Training Runs](docs/mlflow-runs.png)
+
+![MLflow Model Registry](docs/mlflow-registry.png)
 
 Run `mlflow ui` locally to compare experiments at [localhost:5000](http://localhost:5000).
 
