@@ -1,112 +1,150 @@
-# Wine Quality MLE
+# Wine Quality Prediction API
 
-End-to-end ML Engineering project that predicts wine quality from chemical properties.
-The goal is not the model itself, but the **engineering infrastructure** around it.
+End-to-end ML Engineering project that predicts red wine quality from chemical properties.
+The focus is not the model itself, but the **engineering infrastructure** around it.
+
+**Live demo:** [ml-wine-quality-api-production.up.railway.app](https://ml-wine-quality-api-production.up.railway.app/)
 
 ## Project Structure
 
 ```
 wine-quality-mle/
-├── .github/workflows/       # CI/CD pipelines (GitHub Actions)
-├── data/                    # Raw and processed datasets (tracked by DVC)
-├── models/                  # Trained model artifacts (tracked by MLflow)
+├── .github/workflows/ci.yml  # CI/CD pipeline (GitHub Actions)
+├── data/                     # Dataset (tracked by DVC)
+├── models/                   # Trained model artifacts
 ├── src/
-│   ├── train.py             # Training pipeline with MLflow tracking
-│   └── api.py               # FastAPI prediction service
-├── tests/                   # Automated tests
-├── docs/                    # Additional documentation
-├── pyproject.toml           # Python dependencies
-├── Dockerfile               # Container packaging
-└── .gitignore               # Excludes data/ and models/ from git
+│   ├── train.py              # Training pipeline with MLflow tracking
+│   ├── api.py                # FastAPI prediction service
+│   └── monitoring.py         # Drift detection and metrics
+├── static/
+│   └── index.html            # Web interface
+├── tests/
+│   ├── test_api.py           # API tests (endpoints, validation, drift)
+│   └── test_model.py         # Model tests (quality thresholds, data integrity)
+├── docs/
+│   └── ARCHITECTURE.md       # Detailed architecture documentation
+├── Dockerfile                # Container packaging
+├── pyproject.toml            # Python dependencies
+└── .gitignore
 ```
 
 ## Quick Start
 
 ```bash
-# Install dependencies
-pip install pandas scikit-learn fastapi uvicorn joblib mlflow dvc
+# Clone the repository
+git clone https://github.com/adrianoribeiro/ml-wine-quality-api.git
+cd ml-wine-quality-api
 
-# Train the model (downloads data, trains, logs to MLflow)
+# Install dependencies
+pip install pandas scikit-learn fastapi uvicorn joblib numpy mlflow
+
+# Download dataset
+curl -sL "https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-red.csv" -o data/winequality-red.csv
+
+# Train the model
 python src/train.py
 
-# Serve the API
+# Start the API
 uvicorn src.api:app --port 8000
-
-# Test a prediction
-curl -X POST http://localhost:8000/predict \
-  -H "Content-Type: application/json" \
-  -d '{"fixed_acidity": 7.4, "volatile_acidity": 0.7, "citric_acid": 0.0, "residual_sugar": 1.9, "chlorides": 0.076, "free_sulfur_dioxide": 11.0, "total_sulfur_dioxide": 34.0, "density": 0.9978, "pH": 3.51, "sulphates": 0.56, "alcohol": 9.4}'
-
-# View experiment history
-mlflow ui
 ```
 
-## Tools and Their Roles
+Open [localhost:8000](http://localhost:8000) for the web interface or [localhost:8000/docs](http://localhost:8000/docs) for the Swagger UI.
 
-| Tool | What it tracks | Why |
-|------|---------------|-----|
-| **Git + GitHub** | Code, configuration, docs | Version control for source code |
-| **DVC** | Datasets | Data files are too large for git. DVC keeps a pointer in git and stores the actual file externally |
-| **MLflow** | Experiments, metrics, models | Compare training runs, manage model versions, promote to production |
-| **FastAPI** | - | Serves the model as an HTTP API so any application can use it |
-| **Docker** | - | Packages everything into a container that runs the same way everywhere |
-| **GitHub Actions** | - | Automates testing, building, and deployment on every push |
+## Running with Docker
 
-## Data Versioning (DVC)
+```bash
+docker build -t wine-quality-api .
+docker run -p 8000:8000 wine-quality-api
+```
 
-> **Note:** This is a learning/demo project. In a production environment, DVC would be configured
-> with a remote storage backend (Amazon S3, Google Cloud Storage, Azure Blob, etc.) so that
-> team members can share datasets via `dvc push` and `dvc pull`.
->
-> In this project, the dataset is small (84KB) and publicly available, so we include it in the
-> `data/` directory for convenience. DVC is configured to demonstrate the versioning workflow
-> (pointer files, `.gitignore` integration, hash-based tracking) without requiring cloud infrastructure.
->
-> See [docs/DVC_SETUP.md](docs/DVC_SETUP.md) for details on how DVC is configured and how to
-> set up a remote storage backend for production use.
+## Tech Stack
 
-## Experiment Tracking (MLflow)
-
-Each training run is automatically logged to MLflow with:
-- **Parameters:** model type, n_estimators, test_size, random_state
-- **Metrics:** MAE (Mean Absolute Error), R2 score
-- **Artifacts:** the trained model file
-
-Run `mlflow ui` and open http://localhost:5000 to compare experiments.
+| Tool | Role |
+|------|------|
+| **scikit-learn** | Model training (RandomForestRegressor) |
+| **FastAPI** | REST API serving predictions |
+| **MLflow** | Experiment tracking, parameter/metric logging, model registry |
+| **DVC** | Dataset versioning |
+| **Docker** | Containerization for reproducible deployments |
+| **GitHub Actions** | CI/CD pipeline (test + Docker build on every push) |
+| **pytest** | Automated testing (15 tests: API + model quality) |
+| **Railway** | Cloud deployment |
 
 ## API Endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
+| GET | `/` | Web interface |
 | GET | `/health` | Health check |
-| POST | `/predict` | Predict wine quality from chemical features |
+| GET | `/metrics` | Prediction statistics (count, avg, min, max) |
 | GET | `/docs` | Interactive API documentation (Swagger UI) |
+| POST | `/predict` | Predict wine quality from chemical features |
 
-## Data Flow
+### Predict Example
 
-```
-[Raw Data] --DVC--> [Feature Engineering] --MLflow--> [Trained Model]
-                                                           |
-                                                      [Model Registry]
-                                                           |
-                                                   [FastAPI Service]
-                                                           |
-                                                     [Docker Container]
-                                                           |
-                                                  [Production Server]
-                                                           |
-                                                    [Monitoring]
+```bash
+curl -X POST https://ml-wine-quality-api-production.up.railway.app/predict \
+  -H "Content-Type: application/json" \
+  -d '{"alcohol": 12.0, "pH": 3.2, "sulphates": 0.8}'
 ```
 
-## Implementation Roadmap
+Response:
+```json
+{
+  "quality": 5.82,
+  "drift": {
+    "drift_detected": false,
+    "alerts_count": 0,
+    "alerts": []
+  },
+  "input_data": { ... }
+}
+```
 
-| Step | What | Tools | Status |
-|------|------|-------|--------|
-| 1 | Training pipeline + API | scikit-learn, FastAPI | Done |
-| 2 | Data versioning | DVC | Done |
-| 3 | Experiment tracking | MLflow | Done |
-| 4 | Git setup + first commit | Git, GitHub | In progress |
-| 5 | Automated tests | pytest | Planned |
-| 6 | Containerization | Docker | Planned |
-| 7 | CI/CD pipeline | GitHub Actions | Planned |
-| 8 | Monitoring | Prometheus, Grafana | Planned |
+## Monitoring and Drift Detection
+
+Every prediction is checked against the training data distribution. The API raises alerts when input values fall outside expected ranges:
+
+- **Warning:** value is more than 3 standard deviations from the training mean
+- **Critical:** value is outside the training data range entirely
+
+This helps detect **data drift** — when production data starts looking different from training data, indicating the model may need retraining.
+
+## Data Versioning (DVC)
+
+> **Note:** This is a portfolio/demo project. In a production environment, DVC would be configured
+> with a remote storage backend (Amazon S3, Google Cloud Storage, Azure Blob) so that
+> team members can share datasets via `dvc push` and `dvc pull`.
+>
+> In this project, the dataset is small (84KB) and publicly available from the
+> [UCI ML Repository](https://archive.ics.uci.edu/ml/datasets/wine+quality), so it is
+> downloaded during the Docker build. DVC is configured to demonstrate the versioning workflow
+> (pointer files, hash-based tracking) without requiring cloud infrastructure.
+
+## Experiment Tracking (MLflow)
+
+Each training run is logged to MLflow with:
+- **Parameters:** model type, n_estimators, test_size, random_state
+- **Metrics:** MAE (Mean Absolute Error), R2 score
+- **Artifacts:** trained model file
+
+Run `mlflow ui` locally to compare experiments at [localhost:5000](http://localhost:5000).
+
+## CI/CD Pipeline
+
+Every push to `main` triggers the GitHub Actions pipeline:
+
+```
+Push → Install dependencies → Download data → Train model → Run tests (15) → Build Docker image
+```
+
+If any test fails, the pipeline stops. Tests cover both software quality (API responses, validation) and model quality (MAE thresholds, prediction ranges).
+
+## Model Performance
+
+| Metric | Value |
+|--------|-------|
+| MAE | 0.422 |
+| R2 | 0.539 |
+| Algorithm | RandomForestRegressor (n_estimators=100) |
+| Dataset | UCI Wine Quality - Red (1599 samples, 11 features) |

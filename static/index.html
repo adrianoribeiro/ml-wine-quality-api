@@ -120,6 +120,33 @@
             font-size: 0.8rem;
             color: #ccc;
         }
+        .scale {
+            margin-top: 20px;
+            padding: 16px;
+            background: #111;
+            border-radius: 8px;
+            border: 1px solid #222;
+        }
+        .scale-title {
+            font-size: 0.8rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+        .scale-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            font-size: 0.85rem;
+        }
+        .scale-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
         .footer {
             margin-top: 40px;
             text-align: center;
@@ -190,6 +217,26 @@
             <div class="quality-score" id="qualityScore">-</div>
             <div class="quality-label" id="qualityText"></div>
             <div id="driftInfo"></div>
+
+            <div class="scale">
+                <div class="scale-title">Quality Scale</div>
+                <div class="scale-row">
+                    <span><span class="scale-dot" style="background:#4ade80"></span>Excellent</span>
+                    <span style="color:#666">7.0+</span>
+                </div>
+                <div class="scale-row">
+                    <span><span class="scale-dot" style="background:#a3e635"></span>Good</span>
+                    <span style="color:#666">6.0 – 6.99</span>
+                </div>
+                <div class="scale-row">
+                    <span><span class="scale-dot" style="background:#fbbf24"></span>Average</span>
+                    <span style="color:#666">5.0 – 5.99</span>
+                </div>
+                <div class="scale-row">
+                    <span><span class="scale-dot" style="background:#f87171"></span>Below Average</span>
+                    <span style="color:#666">&lt; 5.0</span>
+                </div>
+            </div>
         </div>
 
         <div class="footer">
